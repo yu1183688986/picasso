@@ -16,9 +16,7 @@
 package com.squareup.picasso3;
 
 import android.content.Context;
-import android.content.res.Resources;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 
 import static android.content.ContentResolver.SCHEME_ANDROID_RESOURCE;
 import static com.squareup.picasso3.Picasso.LoadedFrom.DISK;
@@ -40,23 +38,13 @@ class ResourceRequestHandler extends RequestHandler {
   @Override public void load(Picasso picasso, Request request, Callback callback) {
     boolean signaledCallback = false;
     try {
-      Resources res = Utils.getResources(context, request);
-      int id = Utils.getResourceId(res, request);
+      Bitmap bitmap = decodeResource(context, request);
       signaledCallback = true;
-      callback.onSuccess(new Result(decodeResource(res, id, request), DISK));
+      callback.onSuccess(new Result(bitmap, DISK));
     } catch (Exception e) {
       if (!signaledCallback) {
         callback.onError(e);
       }
     }
-  }
-
-  private static Bitmap decodeResource(Resources resources, int id, Request data) {
-    final BitmapFactory.Options options = createBitmapOptions(data);
-    if (requiresInSampleSize(options)) {
-      BitmapFactory.decodeResource(resources, id, options);
-      calculateInSampleSize(data.targetWidth, data.targetHeight, options, data);
-    }
-    return BitmapFactory.decodeResource(resources, id, options);
   }
 }
