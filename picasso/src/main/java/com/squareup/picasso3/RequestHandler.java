@@ -125,7 +125,7 @@ public abstract class RequestHandler {
      * {@link #load(Picasso, Request, Callback)} call. This is only accessible to built-in
      * RequestHandlers.
      */
-    int getExifOrientation() {
+    public int getExifOrientation() {
       return exifOrientation;
     }
   }

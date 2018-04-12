@@ -140,10 +140,8 @@ class BitmapHunter implements Runnable {
   }
 
   Result hunt() throws IOException {
-    Bitmap bitmap = null;
-
     if (shouldReadFromMemoryCache(data.memoryPolicy)) {
-      bitmap = cache.get(key);
+      Bitmap bitmap = cache.get(key);
       if (bitmap != null) {
         stats.dispatchCacheHit();
         if (picasso.loggingEnabled) {
@@ -193,21 +191,15 @@ class BitmapHunter implements Runnable {
     }
 
     Result result = resultReference.get();
-    Picasso.LoadedFrom loadedFrom = null;
-    // Determined during decoding of original resource.
-    int exifOrientation = 0;
-    if (result != null) {
-      loadedFrom = result.getLoadedFrom();
-      // Determined during decoding of original resource.
-      exifOrientation = result.getExifOrientation();
-      bitmap = result.getBitmap();
-    }
 
-    if (bitmap != null) {
+    if (result.hasBitmap()) {
       if (picasso.loggingEnabled) {
         log(OWNER_HUNTER, VERB_DECODED, data.logId());
       }
+      Bitmap bitmap = result.getBitmap();
       stats.dispatchBitmapDecoded(bitmap);
+
+      int exifOrientation = result.getExifOrientation();
       if (data.needsTransformation() || exifOrientation != 0) {
         if (data.needsMatrixTransform() || exifOrientation != 0) {
           bitmap = transformResult(data, bitmap, exifOrientation);
@@ -215,20 +207,22 @@ class BitmapHunter implements Runnable {
             log(OWNER_HUNTER, VERB_TRANSFORMED, data.logId());
           }
         }
+
+        result = new Result(bitmap, result.getLoadedFrom(), exifOrientation);
         if (data.hasCustomTransformations()) {
-          bitmap = applyCustomTransformations(data.transformations, bitmap);
+          result = applyCustomTransformations(data.transformations, result);
           if (picasso.loggingEnabled) {
             log(OWNER_HUNTER, VERB_TRANSFORMED, data.logId(),
                 "from custom transformations");
           }
         }
       }
-      if (bitmap != null) {
-        stats.dispatchBitmapTransformed(bitmap);
+      if (result.hasBitmap()) {
+        stats.dispatchBitmapTransformed(result.getBitmap());
       }
     }
 
-    return new Result(bitmap, loadedFrom, exifOrientation);
+    return result;
   }
 
   void attach(Action action) {
@@ -394,10 +388,14 @@ class BitmapHunter implements Runnable {
     return new BitmapHunter(picasso, dispatcher, cache, stats, action, ERRORING_HANDLER);
   }
 
-  static Bitmap applyCustomTransformations(List<Transformation> transformations, Bitmap result) {
+  static Result applyCustomTransformations(List<Transformation> transformations, Result result) {
+    if (!result.hasBitmap()) {
+      return result;
+    }
+
     for (int i = 0, count = transformations.size(); i < count; i++) {
       final Transformation transformation = transformations.get(i);
-      Bitmap newResult;
+      Result newResult;
       try {
         newResult = transformation.transform(result);
       } catch (final RuntimeException e) {
@@ -428,7 +426,9 @@ class BitmapHunter implements Runnable {
         return null;
       }
 
-      if (newResult == result && result.isRecycled()) {
+      Bitmap bitmap = result.getBitmap();
+
+      if (newResult == result && bitmap.isRecycled()) {
         Picasso.HANDLER.post(new Runnable() {
           @Override public void run() {
             throw new IllegalStateException("Transformation "
@@ -440,7 +440,7 @@ class BitmapHunter implements Runnable {
       }
 
       // If the transformation returned a new bitmap ensure they recycled the original.
-      if (newResult != result && !result.isRecycled()) {
+      if (newResult != result && !bitmap.isRecycled()) {
         Picasso.HANDLER.post(new Runnable() {
           @Override public void run() {
             throw new IllegalStateException("Transformation "
@@ -453,6 +453,7 @@ class BitmapHunter implements Runnable {
 
       result = newResult;
     }
+
     return result;
   }
 
