@@ -27,6 +27,7 @@ import android.os.Process;
 import android.os.StatFs;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import java.io.File;
@@ -96,7 +97,7 @@ final class Utils {
     // No instances.
   }
 
-  static <T> T checkNotNull(T value, String message) {
+  static <T> T checkNotNull(@Nullable T value, String message) {
     if (value == null) {
       throw new NullPointerException(message);
     }

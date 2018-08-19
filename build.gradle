@@ -22,7 +22,8 @@ buildscript {
     junit: 'junit:junit:4.12',
     truth: 'com.google.truth:truth:0.42',
     robolectric: 'org.robolectric:robolectric:4.0-alpha-2',
-    mockito: 'org.mockito:mockito-core:2.19.0'
+    mockito: 'org.mockito:mockito-core:2.19.0',
+    nullaway: 'com.uber.nullaway:nullaway:0.5.3'
   ]
 
   ext.isCi = "true" == System.getenv('CI')
@@ -57,7 +58,11 @@ subprojects {
         '-Xep:DateFormatConstant:ERROR',
         '-Xep:PrivateConstructorForUtilityClass:ERROR',
         '-Xep:DateFormatConstant:ERROR',
-        '-XepExcludedPaths:.*/build/.*'
+        '-XepExcludedPaths:.*/build/.*',
+
+        // NullAway args
+        "-Xep:NullAway:ERROR",
+        "-XepOpt:NullAway:AnnotatedPackages=com.squareup.picasso3"
     ]
   }
 

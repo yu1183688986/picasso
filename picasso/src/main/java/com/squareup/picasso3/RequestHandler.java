@@ -60,8 +60,8 @@ public abstract class RequestHandler {
    */
   public static final class Result {
     private final Picasso.LoadedFrom loadedFrom;
-    private final Bitmap bitmap;
-    private final Drawable drawable;
+    private @Nullable final Bitmap bitmap;
+    private @Nullable final Drawable drawable;
     private final int exifRotation;
 
     public Result(@NonNull Bitmap bitmap, @NonNull Picasso.LoadedFrom loadedFrom) {
@@ -163,7 +163,7 @@ public abstract class RequestHandler {
    * Lazily create {@link BitmapFactory.Options} based in given
    * {@link Request}, only instantiating them if needed.
    */
-  static BitmapFactory.Options createBitmapOptions(Request data) {
+  @Nullable static BitmapFactory.Options createBitmapOptions(Request data) {
     final boolean justBounds = data.hasSize();
     final boolean hasConfig = data.config != null;
     BitmapFactory.Options options = null;
@@ -173,18 +173,18 @@ public abstract class RequestHandler {
       options.inInputShareable = data.purgeable;
       options.inPurgeable = data.purgeable;
       if (hasConfig) {
-        options.inPreferredConfig = data.config;
+        options.inPreferredConfig = checkNotNull(data.config, "config == null");
       }
     }
     return options;
   }
 
-  static boolean requiresInSampleSize(BitmapFactory.Options options) {
+  static boolean requiresInSampleSize(@Nullable BitmapFactory.Options options) {
     return options != null && options.inJustDecodeBounds;
   }
 
-  static void calculateInSampleSize(int reqWidth, int reqHeight, BitmapFactory.Options options,
-      Request request) {
+  static void calculateInSampleSize(int reqWidth, int reqHeight,
+      @NonNull BitmapFactory.Options options, Request request) {
     calculateInSampleSize(reqWidth, reqHeight, options.outWidth, options.outHeight, options,
         request);
   }
@@ -232,16 +232,16 @@ public abstract class RequestHandler {
       byte[] bytes = bufferedSource.readByteArray();
       if (calculateSize) {
         BitmapFactory.decodeByteArray(bytes, 0, bytes.length, options);
-        RequestHandler.calculateInSampleSize(request.targetWidth, request.targetHeight, options,
-            request);
+        RequestHandler.calculateInSampleSize(request.targetWidth, request.targetHeight,
+            checkNotNull(options, "options == null"), request);
       }
       bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length, options);
     } else {
       if (calculateSize) {
         InputStream stream = new SourceBufferingInputStream(bufferedSource);
         BitmapFactory.decodeStream(stream, null, options);
-        RequestHandler.calculateInSampleSize(request.targetWidth, request.targetHeight, options,
-            request);
+        RequestHandler.calculateInSampleSize(request.targetWidth, request.targetHeight,
+            checkNotNull(options, "options == null"), request);
       }
       bitmap = BitmapFactory.decodeStream(bufferedSource.inputStream(), null, options);
     }
